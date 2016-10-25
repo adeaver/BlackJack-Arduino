@@ -7,18 +7,28 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 // Stepper Motor with 1.8 degrees per step
 Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 1);
 
+int cardSpitter = 9;
+
 void setup() {
   Serial.begin(9600); 
   AFMS.begin();
   
   rotational->setSpeed(10);
+  pinMode(cardSpitter, OUTPUT);
 }
 
 void loop() {
   rotateMotor72degrees();
+  spitCards();
   delay(500);
 }
 
 void rotateMotor72degrees() {
   rotational->step(40, FORWARD, DOUBLE);
+}
+
+void spitCards() {
+  analogWrite(cardSpitter, 250);
+  delay(100);
+  analogWrite(cardSpitter, 0); 
 }
