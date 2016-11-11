@@ -10,6 +10,10 @@ Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 2);
 
 String token = "";
 
+int cardsDealt = 0;
+
+const int cardDealingSteps = 30;
+
 void setup() {
   Serial.begin(9600);
   
@@ -38,17 +42,29 @@ void loop() {
     if(token.startsWith("5")) {
       hit();
     }
+    
+    if(token.startsWith("e")) {
+     reset();
+    }
   
   }
 }
 
 void dispenseCard() {
-  cardSpitter->step(200, FORWARD);
+  cardsDealt++;
+  cardSpitter->step(cardDealingSteps, FORWARD);
+  cardSpitter->release();
   Serial.write("1111"); 
 }
 
 void rotate() {
-  rotational->step(300, FORWARD);
+  cardSpitter->step(200, BACKWARD);
+  rotational->step(300, FORWARD, DOUBLE);
+  cardSpitter->step(200, FORWARD);
+  
+  cardSpitter->release();
+  rotational->release();
+  
   Serial.write("2222");
 }
 
@@ -59,4 +75,10 @@ void getUserInput() {
 
 void hit() {
   Serial.write("5555");
+}
+
+void reset() {
+  cardSpitter->step(cardDealingSteps*cardsDealt, BACKWARD);
+  cardSpitter->release();
+  cardsDealt = 0;
 }
