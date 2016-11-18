@@ -98,7 +98,7 @@ void reset() {
 void addPlayer() {
  players[playerCount] = faceStepsTaken;
  playerCount++;
- //rotational->step(25, FORWARD);
+ rotational->step(25, FORWARD);
  faceStepsTaken += 25;
  if(faceStepsTaken >= stopSteps) {
   Serial.write("9999"); 
@@ -108,7 +108,7 @@ void addPlayer() {
 }
 
 void rotateForFaceDetection() {
- //rotational->step(10, FORWARD);
+ rotational->step(10, FORWARD);
  faceStepsTaken += 10;
  
  if(faceStepsTaken >= stopSteps) {
