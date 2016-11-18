@@ -11,7 +11,11 @@ Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 2);
 String token = "";
 
 int cardsDealt = 0;
+int faceStepsTaken = 0;
+int playerCount = 0;
+int players[20];
 
+const int stopSteps = 1200;
 const int cardDealingSteps = 30;
 
 void setup() {
@@ -41,6 +45,14 @@ void loop() {
     
     if(token.startsWith("5")) {
       hit();
+    }
+    
+    if(token.startsWith("7")) {
+      rotateForFaceDetection();
+    }
+    
+    if(token.startsWith("8")) {
+      addPlayer();  
     }
     
     if(token.startsWith("e")) {
@@ -81,4 +93,27 @@ void reset() {
   cardSpitter->step(cardDealingSteps*cardsDealt, BACKWARD);
   cardSpitter->release();
   cardsDealt = 0;
+}
+
+void addPlayer() {
+ players[playerCount] = faceStepsTaken;
+ playerCount++;
+ //rotational->step(25, FORWARD);
+ faceStepsTaken += 25;
+ if(faceStepsTaken >= stopSteps) {
+  Serial.write("9999"); 
+ } else {
+  Serial.write("8888"); 
+ }
+}
+
+void rotateForFaceDetection() {
+ //rotational->step(10, FORWARD);
+ faceStepsTaken += 10;
+ 
+ if(faceStepsTaken >= stopSteps) {
+  Serial.write("9999"); 
+ } else {
+  Serial.write("7777"); 
+ }
 }
