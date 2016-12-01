@@ -31,7 +31,10 @@ char buf [100];
 volatile byte pos;
 volatile boolean stateChanged = false;
 String state = "0000";
-String lastState = "0000";
+int lastState = 1;
+
+unsigned long lastDebounce = millis();
+unsigned long debounceDelay = 500;
 
 void setup() {
   Serial.begin(19200);
@@ -58,9 +61,12 @@ void runState() {
   updateState();
   
   Serial.println("Running state: " + state);
+  if(state.startsWith("0")) {
+     startNewGame();  
+  }
   
   if(state.startsWith("1")) {
-      dispenseCard();
+     dispenseCard();
   }
   
   if(state.startsWith("2")) {
@@ -75,10 +81,6 @@ void runState() {
     hit();
   }
   
-  if(state.startsWith("6")) {
-    resendState(); 
-  }
-  
   if(state.startsWith("7")) {
     rotateForFaceDetection();
   }
@@ -86,13 +88,25 @@ void runState() {
   if(state.startsWith("8")) {
     addPlayer();  
   }
+  
+  lastDebounce = millis();
 }
 
 void loop() {
   if(stateChanged) {
     runState();
     stateChanged = false;
+  } else {
+    if(millis() - lastDebounce >= debounceDelay) {
+      sendState(lastState); 
+    }
   }
+}
+
+void startNewGame() {
+  pos = 0;
+  state = "0000";
+  lastState = 1;
 }
 
 void dispenseCard() {
@@ -128,13 +142,7 @@ void hit() {
 }
 
 void resendState() {
-  int len = lastState.length() + 1;
-  char stateBytes[len];
- 
-  lastState.toCharArray(stateBytes, len);
-  int sState = stateBytes[1] - 48;
-  Serial.println(stateBytes[1]);
-  sendState(stateBytes[1]); 
+  sendState(lastState);
 }
 
 void reset() {
@@ -195,32 +203,17 @@ void updateState() {
   }
   
   pos = 0;
-  
-  if(!state.startsWith("6")) {
-    copyState();
-  }
-  
   state = outState;
 }
 
-void copyState() {
-  int len = state.length() + 1;
-  char stateBytes[len];
-  Serial.println("STATE: " + state);
-  state.toCharArray(stateBytes, len);
- 
-  for(int i = 0; i < len; i++) {
-    Serial.println(stateBytes[i]); 
-  }
-  
-  lastState = String(stateBytes);
-}
-
 void sendState(int sState) {
-  delay(100);
+  delay(150);
+  
   Serial.println("Sending state: " + String(char(sState+48)));
-  for(int i = 0; i <= 15; i++) {
+  for(int i = 0; i <= 12; i++) {
     Serial.println("Sent byte: " + String(char(i+48)));
     SPI.transfer(sState+48);
   }
+  
+  lastState = sState;
 }
