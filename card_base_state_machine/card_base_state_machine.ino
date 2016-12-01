@@ -12,12 +12,12 @@ Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 2);
 String token = "";
 
 int cardsDealt = 0;
-int faceStepsTaken = 0
+int faceStepsTaken = 0;
 int playerCount = 0;
 int players[20];
 
-int reflectancePin = 3;     // reflectance sensor is connected to pin 3
-int reflectanceVal = 0;           // variable to store the value read
+int reflectancePin = A3;     // reflectance sensor is connected to pin 3
+int reflectanceVal = 1001;           // variable to store the value read
 
 int hitButtonPin = 13;      //input pin for "Hit" button
 int passButtonPin = 12;     //input pin for "Pass" button
@@ -31,6 +31,7 @@ char buf [100];
 volatile byte pos;
 volatile boolean stateChanged = false;
 String state = "0000";
+String lastState = "0000";
 
 void setup() {
   Serial.begin(19200);
@@ -74,6 +75,10 @@ void runState() {
     hit();
   }
   
+  if(state.startsWith("6")) {
+    resendState(); 
+  }
+  
   if(state.startsWith("7")) {
     rotateForFaceDetection();
   }
@@ -87,7 +92,6 @@ void loop() {
   if(stateChanged) {
     runState();
     stateChanged = false;
-    state = "";
   }
 }
 
@@ -97,6 +101,10 @@ void dispenseCard() {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
     cardSpitter->step(5, FORWARD);
   }
+  cardSpitter->release();
+  reflectanceVal = 1001;
+  
+  sendState(1);
 }
 
 void rotate() {
@@ -117,6 +125,16 @@ void getUserInput() {
 
 void hit() {
   sendState(5);
+}
+
+void resendState() {
+  int len = lastState.length() + 1;
+  char stateBytes[len];
+ 
+  lastState.toCharArray(stateBytes, len);
+  int sState = stateBytes[1] - 48;
+  Serial.println(stateBytes[1]);
+  sendState(stateBytes[1]); 
 }
 
 void reset() {
@@ -177,12 +195,32 @@ void updateState() {
   }
   
   pos = 0;
+  
+  if(!state.startsWith("6")) {
+    copyState();
+  }
+  
   state = outState;
 }
 
+void copyState() {
+  int len = state.length() + 1;
+  char stateBytes[len];
+  Serial.println("STATE: " + state);
+  state.toCharArray(stateBytes, len);
+ 
+  for(int i = 0; i < len; i++) {
+    Serial.println(stateBytes[i]); 
+  }
+  
+  lastState = String(stateBytes);
+}
+
 void sendState(int sState) {
+  delay(100);
   Serial.println("Sending state: " + String(char(sState+48)));
-  for(int i = 0; i <= 12; i++) {
+  for(int i = 0; i <= 15; i++) {
+    Serial.println("Sent byte: " + String(char(i+48)));
     SPI.transfer(sState+48);
   }
 }
