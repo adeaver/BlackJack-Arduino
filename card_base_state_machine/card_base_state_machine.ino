@@ -34,7 +34,7 @@ String state = "0000";
 int lastState = 1;
 
 unsigned long lastDebounce = millis();
-unsigned long debounceDelay = 500;
+unsigned long debounceDelay = 350;
 
 void setup() {
   Serial.begin(19200);
