@@ -6,12 +6,17 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 
 // Stepper Motor with 1.8 degrees per step
 Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 1);
+<<<<<<< HEAD
 Adafruit_DCMotor *cardspitter = AFMS.getMotor(3);
 
 
 float step_angle = 1.8;
 float num_teeth_small = 18;
 float num_teeth_big = 108;
+=======
+
+float step_angle = 1.8;
+>>>>>>> 6d5b1778f0b6818c873cacb1858531bac8605da5
 int loops = 0;
 int stepCount = 0;
 
@@ -43,7 +48,10 @@ void loop() {
 
 void rotateMotor72degrees(bool go) {
   if(go){
+<<<<<<< HEAD
     Serial.println('hello');
+=======
+>>>>>>> 6d5b1778f0b6818c873cacb1858531bac8605da5
     rotational->step(steps, FORWARD,DOUBLE);
     stepCount += steps;
   }
