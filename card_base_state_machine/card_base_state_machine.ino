@@ -19,8 +19,11 @@ int players[20];
 int reflectancePin = A3;     // reflectance sensor is connected to pin 3
 int reflectanceVal = 1001;           // variable to store the value read
 
-int hitButtonPin = 13;      //input pin for "Hit" button
-int passButtonPin = 12;     //input pin for "Pass" button
+int hitButtonPin = 10;      //input pin for "Hit" button
+int passButtonPin = 9;     //input pin for "Pass" button
+
+int hitPressed = LOW;
+int passPressed = LOW;
 
 const int stopSteps = 1200;
 const int cardDealingSteps = 30;
@@ -29,9 +32,9 @@ const int cardDealingSteps = 30;
 // SPI Variables
 char buf [100];
 volatile byte pos;
-volatile boolean stateChanged = false;
-String state = "0000";
-int lastState = 1;
+volatile boolean stateChanged = true;
+String state = "3333";
+int lastState = 0;
 
 unsigned long lastDebounce = millis();
 unsigned long debounceDelay = 350;
@@ -54,16 +57,18 @@ void setup() {
   SPI.attachInterrupt();
   
   rotational->setSpeed(20);
-  cardSpitter->setSpeed(10);
+  cardSpitter->setSpeed(15);
 }
 
 void runState() {
   updateState();
   
+  state = "3333";
+  
   Serial.println("Running state: " + state);
-  if(state.startsWith("0")) {
-     startNewGame();  
-  }
+//  if(state.startsWith("0")) {
+//     startNewGame();  
+//  }
   
   if(state.startsWith("1")) {
      dispenseCard();
@@ -113,7 +118,7 @@ void dispenseCard() {
   cardsDealt++;
   while (reflectanceVal>1000) {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
-    cardSpitter->step(5, FORWARD);
+    cardSpitter->step(4, FORWARD, DOUBLE);
   }
   cardSpitter->release();
   reflectanceVal = 1001;
@@ -122,9 +127,9 @@ void dispenseCard() {
 }
 
 void rotate() {
-  cardSpitter->step(200, BACKWARD);
+  cardSpitter->step(100, BACKWARD);
   rotational->step(300, FORWARD, DOUBLE);
-  cardSpitter->step(200, FORWARD);
+  cardSpitter->step(85, FORWARD);
   
   cardSpitter->release();
   rotational->release();
@@ -134,7 +139,21 @@ void rotate() {
 
 void getUserInput() {
   // Could also send "4444" for negative input
-  sendState(3);  
+  //sendState(3);  
+  
+  while(!hitPressed && !passPressed) {
+    hitPressed = digitalRead(hitButtonPin);
+    passPressed = digitalRead(passButtonPin);
+  }
+  
+  if(hitPressed) {
+    sendState(3);  
+  } else {
+    sendState(4);
+  }
+  
+  hitPressed = LOW;
+  passPressed = LOW;
 }
 
 void hit() {
@@ -164,8 +183,8 @@ void addPlayer() {
 }
 
 void rotateForFaceDetection() {
- rotational->step(10, FORWARD);
- faceStepsTaken += 10;
+ rotational->step(30, FORWARD, DOUBLE);
+ faceStepsTaken += 30;
  
  if(faceStepsTaken >= stopSteps) {
    sendState(9); 
