@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include <SPI.h>
+//#include <SPI.h>
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_MS_PWMServoDriver.h"
 
@@ -29,32 +29,16 @@ const int stopSteps = 1200;
 const int cardDealingSteps = 30;
 
 boolean started = false;
-volatile boolean faceScanning = true;
-
-
-// SPI Variables
-char buf [100];
-volatile byte pos;
+boolean faceScanning = true;
 
 unsigned long lastDebounce = millis();
 unsigned long debounceDelay = 1000;
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(9600);
+  Serial.setTimeout(100);
   
   AFMS.begin();
-  
-  // turn on SPI in slave mode
-  SPCR |= bit (SPE);
-
-  // have to send on master in, *slave out*
-  pinMode(MISO, OUTPUT);
-
-  // get ready for an interrupt 
-  pos = 0;   // buffer empty
-
-  // now turn on interrupts
-  SPI.attachInterrupt();
   
   rotational->setSpeed(20);
   cardSpitter->setSpeed(15);
@@ -65,6 +49,7 @@ void setup() {
 
 void loop() {
   if(!faceScanning) {
+    Serial.println("IS NOT SCANNING");
     if(!started) {
       dealCards();
       started = true; 
@@ -73,15 +58,16 @@ void loop() {
     getUserInput();
   } 
   else {
-    Serial.println("Debouncing");    
-//    if(millis() - lastDebounce ) {
-//      sendState();
-//    }
+    if(Serial.available()) {
+      lastDebounce = millis();
+      flushSerial();
+      scanForFaces(Serial.read()-48);
+    }
+    
+    if(millis() - lastDebounce >= debounceDelay) {
+      sendState(); 
+    }
   }
-}
-
-void startNewGame() {
-  pos = 0;
 }
 
 void dealCards() {
@@ -175,12 +161,12 @@ void scanForFaces(int state) {
 }
 
 void sendState() {
-  Serial.println("Sending state");
+  //Serial.println("Sending state");
   if(faceStepsTaken < 1200) {
-    SPI.transfer(7); 
-    faceScanning = false;
+    Serial.write("7"); 
   } else {
-    SPI.transfer(9); 
+    Serial.write("9");
+    faceScanning = false;
   } 
 }
 
@@ -203,6 +189,12 @@ bool getPass() {
   return digitalRead(passButtonPin);
 }
 
+void flushSerial() {
+  while(Serial.available()) {
+    Serial.read(); 
+  }
+}
+
 void zero() {
  bool limit = false;
 
@@ -214,13 +206,14 @@ void zero() {
  }
 }
 
-// SPI interrupt routine
-ISR (SPI_STC_vect) {
-  byte c = SPDR;  // grab byte from SPI Data Register
-  Serial.println("Connected");
-
-  if(faceScanning && c != 0 && c != 10) {
-    Serial.println(char(c+48));
-    scanForFaces(c);
-  }
-}
+//// SPI interrupt routine
+//ISR (SPI_STC_vect)
+//{
+//  byte c = SPDR;
+//  Serial.println("Connected");
+////
+////  if(faceScanning && c != 0 && c != 10) {
+////    Serial.println(char(c+48));
+////    scanForFaces(c);
+////  }
+//}
