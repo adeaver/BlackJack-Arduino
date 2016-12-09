@@ -6,12 +6,12 @@
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 
 // Stepper Motor with 1.8 degrees per step
-Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 2);
-Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 1);
+Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 1);
+Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 2);
 
 uint8_t cardsDealt = 0;
 int faceStepsTaken = 0;
-uint8_t playerCount = 5;
+uint8_t playerCount = 0;
 uint8_t currentPlayer = 0;
 int players[50];
 
@@ -32,7 +32,7 @@ boolean started = false;
 boolean faceScanning = true;
 
 unsigned long lastDebounce = millis();
-unsigned long debounceDelay = 1000;
+unsigned long debounceDelay = 700;
 
 void setup() {
   Serial.begin(9600);
@@ -65,6 +65,7 @@ void loop() {
     }
     
     if(millis() - lastDebounce >= debounceDelay) {
+      lastDebounce = millis();
       sendState(); 
     }
   }
@@ -151,11 +152,13 @@ void scanForFaces(int state) {
   lastDebounce = millis();
   
   if(state != 8) {
-    rotate(25); 
+    rotate(25);
     faceStepsTaken += 25;
   } else {
      addPlayer();
   }
+  
+  rotational->release();
   
   sendState();
 }
