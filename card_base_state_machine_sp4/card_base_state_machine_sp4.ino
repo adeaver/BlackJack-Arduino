@@ -22,6 +22,7 @@ const uint8_t hitButtonPin = 10;      //input pin for "Hit" button
 const uint8_t passButtonPin = 9;     //input pin for "Pass" button
 const uint8_t rotSwitch = 8;
 const uint8_t startButton = 7;
+const uint8_t E_STOP = 6;
 
 int hitPressed = LOW;
 int passPressed = LOW;
@@ -61,11 +62,11 @@ void loop() {
       
       getUserInput();
     } 
-    else {
+    if(faceScanning) {
       if(Serial.available()) {
         lastDebounce = millis();
-        flushSerial();
-        scanForFaces(Serial.read()-48);
+        int val = flushSerial();
+        scanForFaces(val);
       }
       
       if(millis() - lastDebounce >= debounceDelay) {
@@ -76,6 +77,8 @@ void loop() {
   } else {
     playingGame = getStartStop();
     
+    //Serial.println("IS NOT PLAYING");
+    
     if(playingGame) {
       lastDebounce = millis(); 
     }
@@ -84,6 +87,7 @@ void loop() {
 
 void dealCards() {
   Serial.println("Dealing");
+  Serial.println(playerCount);
   for(int i = 0; i < playerCount; i++) {
     dispenseCard();
     dispenseCard();
@@ -119,6 +123,10 @@ void goToNextPlayer() {
   
   if(moveSteps < 0) {
     moveSteps *= -1;  
+  }
+  
+  if(moveSteps == 0) {
+    moveSteps = players[currentPlayer];  
   }
   
   rotate(moveSteps);
@@ -168,6 +176,7 @@ void endGame() {
   started = false;
   faceScanning = true;
   playingGame = false;
+  delay(100);
 }
 
 void reset() {
@@ -179,11 +188,18 @@ void reset() {
 void scanForFaces(int state) {
   lastDebounce = millis();
   
+  Serial.println("STATE");
+  Serial.println(state);
+  
   if(state != 8) {
     rotate(25);
     faceStepsTaken += 25;
   } else {
      addPlayer();
+  }
+  
+  if(faceStepsTaken >= 1200) {
+    faceScanning = false; 
   }
   
   rotational->release();
@@ -197,13 +213,12 @@ void sendState() {
     Serial.write("7"); 
   } else {
     Serial.write("9");
-    faceScanning = false;
   } 
 }
 
 void addPlayer() {
  players[playerCount] = faceStepsTaken;
- playerCount++;
+ playerCount = playerCount + 1;
  rotate(25);
  faceStepsTaken += 25;
 }
@@ -224,10 +239,17 @@ bool getStartStop() {
   return digitalRead(startButton); 
 }
 
-void flushSerial() {
+int flushSerial() {
+  int val = 0;
+  int rVal = 0;
   while(Serial.available()) {
-    Serial.read(); 
+    rVal = Serial.read();
+    if(val == 0 && rVal > 0) {
+      val = rVal; 
+    }
   }
+  
+  return val-48;
 }
 
 void zero() {
