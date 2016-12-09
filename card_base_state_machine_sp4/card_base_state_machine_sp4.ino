@@ -21,15 +21,18 @@ int reflectanceVal = 1001;           // variable to store the value read
 const uint8_t hitButtonPin = 10;      //input pin for "Hit" button
 const uint8_t passButtonPin = 9;     //input pin for "Pass" button
 const uint8_t rotSwitch = 8;
+const uint8_t startButton = 7;
 
 int hitPressed = LOW;
 int passPressed = LOW;
+int startPressed = LOW;
 
 const int stopSteps = 1200;
 const int cardDealingSteps = 30;
 
 boolean started = false;
 boolean faceScanning = true;
+boolean playingGame = false;
 
 unsigned long lastDebounce = millis();
 unsigned long debounceDelay = 700;
@@ -48,25 +51,33 @@ void setup() {
 }
 
 void loop() {
-  if(!faceScanning) {
-    Serial.println("IS NOT SCANNING");
-    if(!started) {
-      dealCards();
-      started = true; 
+  if(playingGame) {
+    if(!faceScanning) {
+      Serial.println("IS NOT SCANNING");
+      if(!started) {
+        dealCards();
+        started = true; 
+      }
+      
+      getUserInput();
+    } 
+    else {
+      if(Serial.available()) {
+        lastDebounce = millis();
+        flushSerial();
+        scanForFaces(Serial.read()-48);
+      }
+      
+      if(millis() - lastDebounce >= debounceDelay) {
+        lastDebounce = millis();
+        sendState(); 
+      }
     }
+  } else {
+    playingGame = getStartStop();
     
-    getUserInput();
-  } 
-  else {
-    if(Serial.available()) {
-      lastDebounce = millis();
-      flushSerial();
-      scanForFaces(Serial.read()-48);
-    }
-    
-    if(millis() - lastDebounce >= debounceDelay) {
-      lastDebounce = millis();
-      sendState(); 
+    if(playingGame) {
+      lastDebounce = millis(); 
     }
   }
 }
@@ -126,11 +137,18 @@ void goToNextPlayer() {
 void getUserInput() {
   hitPressed = getHit();
   passPressed = getPass();
+  startPressed = getStartStop();
 
-  while(!hitPressed && !passPressed) {
+  while(!hitPressed && !passPressed && !startPressed) {
     hitPressed = getHit();
     passPressed = getPass();
+    startPressed = getStartStop();
   }
+  
+  if(startPressed) {
+    endGame();
+  }
+  
   if(hitPressed){
     dispenseCard();
   }
@@ -140,6 +158,16 @@ void getUserInput() {
   
   hitPressed = LOW;
   passPressed = LOW;
+}
+
+void endGame() {
+  cardsDealt = 0;
+  faceStepsTaken = 0;
+  playerCount = 0;
+  currentPlayer = 0;
+  started = false;
+  faceScanning = true;
+  playingGame = false;
 }
 
 void reset() {
@@ -192,6 +220,10 @@ bool getPass() {
   return digitalRead(passButtonPin);
 }
 
+bool getStartStop() {
+  return digitalRead(startButton); 
+}
+
 void flushSerial() {
   while(Serial.available()) {
     Serial.read(); 
@@ -208,15 +240,3 @@ void zero() {
   }
  }
 }
-
-//// SPI interrupt routine
-//ISR (SPI_STC_vect)
-//{
-//  byte c = SPDR;
-//  Serial.println("Connected");
-////
-////  if(faceScanning && c != 0 && c != 10) {
-////    Serial.println(char(c+48));
-////    scanForFaces(c);
-////  }
-//}
