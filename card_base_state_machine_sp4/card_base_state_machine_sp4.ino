@@ -56,10 +56,10 @@ void loop() {
     if(!faceScanning) {
       Serial.println("IS NOT SCANNING");
       if(!started) {
-        dealCards();
         started = true; 
       }
       
+      goToNextPlayer();
       getUserInput();
     } 
     if(faceScanning) {
@@ -85,18 +85,6 @@ void loop() {
   }
 }
 
-void dealCards() {
-  Serial.println("Dealing");
-  Serial.println(playerCount);
-  for(int i = 0; i < playerCount; i++) {
-    dispenseCard();
-    dispenseCard();
-    goToNextPlayer();
-  }  
-  
-  Serial.println("Done Dealing"); 
-}
-
 void dispenseCard() {
   cardsDealt++;
   while (reflectanceVal>900) {
@@ -111,6 +99,7 @@ void dispenseCard() {
 
 void rotate(int steps) {
   rotational->step(steps, FORWARD, DOUBLE);
+  rotational->release();
 }
 
 void goToNextPlayer() {
@@ -138,8 +127,6 @@ void goToNextPlayer() {
 
 //  currentPlayer++;
   cardSpitter->release();
-  rotational->release();
-  
 }
 
 void getUserInput() {
@@ -221,6 +208,8 @@ void addPlayer() {
  playerCount = playerCount + 1;
  rotate(25);
  faceStepsTaken += 25;
+ dispenseCard();
+ dispenseCard();
 }
 
 bool getRotLimit() {
