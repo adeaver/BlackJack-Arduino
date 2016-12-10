@@ -46,7 +46,7 @@ void setup() {
   
   rotational->setSpeed(20);
   cardSpitter->setSpeed(15);
-  
+  allSystemsTest();
 //  zero();
 //  reset();
 }
@@ -251,3 +251,19 @@ void zero() {
   }
  }
 }
+ void allSystemsTest() {
+
+   while(!getHit()){
+  
+   }
+   while(!getPass()){
+    
+   }
+   while(!getStartStop()){
+    
+   }
+   dispenseCard();
+   
+  
+ }
+
