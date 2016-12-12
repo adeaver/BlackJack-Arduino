@@ -33,8 +33,8 @@ const int fullRotation = 1200;
 const int cardDealingSteps = 30;
 
 boolean started = false;
-boolean faceScanning = false;
-boolean playingGame = true;
+boolean faceScanning = true;
+boolean playingGame = false;
 
 unsigned long lastDebounce = millis();
 unsigned long debounceDelay = 700;
