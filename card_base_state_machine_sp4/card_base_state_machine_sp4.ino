@@ -6,11 +6,12 @@
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 
 // Stepper Motor with 1.8 degrees per step
-Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 1);
-Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 2);
+Adafruit_StepperMotor *rotational = AFMS.getStepper(200, 2);
+Adafruit_StepperMotor *cardSpitter = AFMS.getStepper(200, 1);
 
 uint8_t cardsDealt = 0;
 int faceStepsTaken = 0;
+int atSteps = 0;
 uint8_t playerCount = 0;
 uint8_t currentPlayer = 0;
 int players[50];
@@ -18,22 +19,22 @@ int players[50];
 uint8_t reflectancePin = A3;     // reflectance sensor is connected to pin 3
 int reflectanceVal = 1001;           // variable to store the value read
 
-const uint8_t hitButtonPin = 10;      //input pin for "Hit" button
-const uint8_t passButtonPin = 9;     //input pin for "Pass" button
+const uint8_t hitButtonPin = A4;      //input pin for "Hit" button
+const uint8_t passButtonPin = A2;     //input pin for "Pass" button
 const uint8_t rotSwitch = 8;
-const uint8_t startButton = 7;
-const uint8_t E_STOP = 6;
+const uint8_t startButton = 6;
+const uint8_t E_STOP = 5;
 
 int hitPressed = LOW;
 int passPressed = LOW;
 int startPressed = LOW;
 
-const int stopSteps = 1200;
+const int fullRotation = 1200;
 const int cardDealingSteps = 30;
 
 boolean started = false;
-boolean faceScanning = true;
-boolean playingGame = false;
+boolean faceScanning = false;
+boolean playingGame = true;
 
 unsigned long lastDebounce = millis();
 unsigned long debounceDelay = 700;
@@ -42,11 +43,14 @@ void setup() {
   Serial.begin(9600);
   Serial.setTimeout(100);
   
+  pinMode(startButton, INPUT);
+  pinMode(hitButtonPin, INPUT);
+  
   AFMS.begin();
   
   rotational->setSpeed(20);
-  cardSpitter->setSpeed(15);
-  allSystemsTest();
+  cardSpitter->setSpeed(20);
+//  allSystemsTest();
 //  zero();
 //  reset();
 }
@@ -54,12 +58,12 @@ void setup() {
 void loop() {
   if(playingGame) {
     if(!faceScanning) {
-      Serial.println("IS NOT SCANNING");
+      //Serial.println("IS NOT SCANNING");
       if(!started) {
         started = true; 
+        goToNextPlayer();
       }
       
-      goToNextPlayer();
       getUserInput();
     } 
     if(faceScanning) {
@@ -87,14 +91,17 @@ void loop() {
 
 void dispenseCard() {
   cardsDealt++;
-  while (reflectanceVal>900) {
+  reflectanceVal = analogRead(reflectancePin);
+  Serial.println(reflectanceVal);
+  while (reflectanceVal>1000) {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
+    delay(5);
     Serial.println(reflectanceVal);
-    cardSpitter->step(4, FORWARD, DOUBLE);
+    cardSpitter->step(1, FORWARD);
   }
   cardSpitter->release();
   reflectanceVal = 1001;
-  delay(100);
+  delay(200);
 }
 
 void rotate(int steps) {
@@ -104,26 +111,26 @@ void rotate(int steps) {
 
 void goToNextPlayer() {
   Serial.println("Rotating");
-  cardSpitter->step(250, BACKWARD);
+  cardSpitter->step(50, BACKWARD);
 
 //  ***** USE WITH FACE DETECTION *****
-  int comparePlayer = currentPlayer < playerCount - 1 ? currentPlayer + 1 : 0; 
-  int moveSteps = players[comparePlayer] - players[currentPlayer];
+  int moveSteps = players[currentPlayer] - atSteps;
   
   if(moveSteps < 0) {
-    moveSteps *= -1;  
+    moveSteps = (fullRotation-atSteps) + players[currentPlayer]; 
   }
   
-  if(moveSteps == 0) {
-    moveSteps = players[currentPlayer];  
-  }
+  atSteps += moveSteps;
+  atSteps = atSteps % fullRotation;
   
-  rotate(moveSteps);
-  //rotate(240);
+  Serial.println(moveSteps);
+  
+  //rotate(moveSteps);
+  rotate(240);
   
   currentPlayer = (currentPlayer+1) % playerCount;
   
-  cardSpitter->step(225, FORWARD);
+  cardSpitter->step(35, FORWARD);
 
 //  currentPlayer++;
   cardSpitter->release();
@@ -131,28 +138,36 @@ void goToNextPlayer() {
 
 void getUserInput() {
   hitPressed = getHit();
-  passPressed = getPass();
+  //passPressed = getPass();
+  passPressed = 1000;
   startPressed = getStartStop();
+  
+  Serial.println(hitPressed);
+  Serial.println(passPressed);
+  Serial.println("Getting User Input");
 
-  while(!hitPressed && !passPressed && !startPressed) {
+  while(hitPressed > 900 && passPressed > 900 && !startPressed) {
     hitPressed = getHit();
-    passPressed = getPass();
+    //passPressed = getPass();
     startPressed = getStartStop();
+    delay(5);
   }
   
   if(startPressed) {
     endGame();
   }
   
-  if(hitPressed){
+  if(hitPressed < 900){
+    Serial.println("Hit Pressed");
     dispenseCard();
+    goToNextPlayer();
   }
-  else if(passPressed) {
+  else if(passPressed < 900) {
     goToNextPlayer();
   }
   
-  hitPressed = LOW;
-  passPressed = LOW;
+  hitPressed = 1000;
+  passPressed = 1000;
 }
 
 void endGame() {
@@ -175,8 +190,8 @@ void reset() {
 void scanForFaces(int state) {
   lastDebounce = millis();
   
-  Serial.println("STATE");
-  Serial.println(state);
+  //Serial.println("STATE");
+  //Serial.println(state);
   
   if(state != 8) {
     rotate(25);
@@ -185,7 +200,7 @@ void scanForFaces(int state) {
      addPlayer();
   }
   
-  if(faceStepsTaken >= 1200) {
+  if(faceStepsTaken >= fullRotation) {
     faceScanning = false; 
   }
   
@@ -196,7 +211,7 @@ void scanForFaces(int state) {
 
 void sendState() {
   //Serial.println("Sending state");
-  if(faceStepsTaken < 1200) {
+  if(faceStepsTaken < fullRotation) {
     Serial.write("7"); 
   } else {
     Serial.write("9");
@@ -206,22 +221,24 @@ void sendState() {
 void addPlayer() {
  players[playerCount] = faceStepsTaken;
  playerCount = playerCount + 1;
+ dispenseCard();
+ dispenseCard();
+ cardSpitter->step(35, BACKWARD);
+ cardSpitter->release();
  rotate(25);
  faceStepsTaken += 25;
- dispenseCard();
- dispenseCard();
 }
 
 bool getRotLimit() {
   return digitalRead(rotSwitch);
 }
 
-bool getHit() {
-  return digitalRead(hitButtonPin);
+int getHit() {
+  return analogRead(hitButtonPin);
 }
 
-bool getPass() {
-  return digitalRead(passButtonPin);
+int getPass() {
+  return analogRead(passButtonPin);
 }
 
 bool getStartStop() {
