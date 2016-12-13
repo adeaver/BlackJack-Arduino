@@ -50,12 +50,10 @@ void setup() {
   
   rotational->setSpeed(20);
   cardSpitter->setSpeed(10);
-//  allSystemsTest();
-//  zero();
-//  reset();
 }
 
 void loop() {
+  Serial.println("In Loop");
   if(playingGame) {
     if(!faceScanning) {
       if(!started) {
@@ -80,8 +78,6 @@ void loop() {
     }
   } else {
     playingGame = getStartStop();
-    
-    //Serial.println("IS NOT PLAYING");
     
     if(playingGame) {
       lastDebounce = millis(); 
