@@ -21,23 +21,23 @@ int reflectanceVal = 1001;           // variable to store the value read
 
 const uint8_t hitButtonPin = A4;      //input pin for "Hit" button
 const uint8_t passButtonPin = A2;     //input pin for "Pass" button
-const uint8_t rotSwitch = 8;
+const uint8_t rotSwitch = 5;
 const uint8_t startButton = 6;
-const uint8_t E_STOP = 5;
+//const uint8_t E_STOP = 4;
 
 int hitPressed = LOW;
 int passPressed = LOW;
 int startPressed = LOW;
 
-const int fullRotation = 1200;
-const int cardDealingSteps = 30;
+const int fullRotation = 600;
+const int cardDealingSteps = 25;
 
 boolean started = false;
 boolean faceScanning = true;
-boolean playingGame = false;
+boolean playingGame = true;
 
 unsigned long lastDebounce = millis();
-unsigned long debounceDelay = 700;
+unsigned long debounceDelay = 2000;
 
 void setup() {
   Serial.begin(9600);
@@ -49,7 +49,7 @@ void setup() {
   AFMS.begin();
   
   rotational->setSpeed(20);
-  cardSpitter->setSpeed(20);
+  cardSpitter->setSpeed(10);
 //  allSystemsTest();
 //  zero();
 //  reset();
@@ -58,9 +58,9 @@ void setup() {
 void loop() {
   if(playingGame) {
     if(!faceScanning) {
-      //Serial.println("IS NOT SCANNING");
       if(!started) {
-        started = true; 
+        started = true;
+        zero();
         goToNextPlayer();
       }
       
@@ -90,12 +90,13 @@ void loop() {
 }
 
 void dispenseCard() {
+  Serial.println("Dispensing");
   cardsDealt++;
   reflectanceVal = analogRead(reflectancePin);
   Serial.println(reflectanceVal);
   while (reflectanceVal>1000) {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
-    delay(5);
+    //delay(5);
     Serial.println(reflectanceVal);
     cardSpitter->step(1, FORWARD);
   }
@@ -113,20 +114,20 @@ void goToNextPlayer() {
   Serial.println("Rotating");
   cardSpitter->step(50, BACKWARD);
 
-//  ***** USE WITH FACE DETECTION *****
   int moveSteps = players[currentPlayer] - atSteps;
   
   if(moveSteps < 0) {
-    moveSteps = (fullRotation-atSteps) + players[currentPlayer]; 
+    zero();
+    moveSteps = players[currentPlayer]; 
   }
   
   atSteps += moveSteps;
   atSteps = atSteps % fullRotation;
   
-  Serial.println(moveSteps);
+ // Serial.println(moveSteps);
   
-  //rotate(moveSteps);
-  rotate(240);
+  rotate(moveSteps);
+  //rotate(240);
   
   currentPlayer = (currentPlayer+1) % playerCount;
   
@@ -137,37 +138,47 @@ void goToNextPlayer() {
 }
 
 void getUserInput() {
-  hitPressed = getHit();
+  hitPressed = analogRead(hitButtonPin);
   //passPressed = getPass();
   passPressed = 1000;
-  startPressed = getStartStop();
+  //startPressed = getStartStop();
   
-  Serial.println(hitPressed);
-  Serial.println(passPressed);
-  Serial.println("Getting User Input");
+//  delay(500);
+//  hitPressed = 100;
 
-  while(hitPressed > 900 && passPressed > 900 && !startPressed) {
-    hitPressed = getHit();
+  boolean wait = true;
+  boolean hit = false;
+
+  while(hitPressed > 1000) {
+    hitPressed = analogRead(hitButtonPin);
     //passPressed = getPass();
-    startPressed = getStartStop();
-    delay(5);
+    //startPressed = getStartStop();
+    
+    if(hitPressed <= 1000) {
+      hit = true;  
+    }
+    
+    Serial.println(hitPressed);
+    delay(150);
   }
   
-  if(startPressed) {
-    endGame();
-  }
+  //Serial.println(hit);
   
-  if(hitPressed < 900){
-    Serial.println("Hit Pressed");
+  if(hit) {
     dispenseCard();
     goToNextPlayer();
-  }
-  else if(passPressed < 900) {
+  } else if(passPressed < 900) {
     goToNextPlayer();
   }
   
-  hitPressed = 1000;
-  passPressed = 1000;
+//  if(startPressed) {
+//    endGame();
+//  }
+  
+  //dispenseCard();
+  
+  hitPressed = 1100;
+  passPressed = 1100;
 }
 
 void endGame() {
@@ -181,21 +192,12 @@ void endGame() {
   delay(100);
 }
 
-void reset() {
-  cardSpitter->step(cardDealingSteps*cardsDealt, BACKWARD);
-  cardSpitter->release();
-  cardsDealt = 0;
-}
-
 void scanForFaces(int state) {
   lastDebounce = millis();
   
-  //Serial.println("STATE");
-  //Serial.println(state);
-  
   if(state != 8) {
-    rotate(25);
-    faceStepsTaken += 25;
+    rotate(cardDealingSteps);
+    faceStepsTaken += cardDealingSteps;
   } else {
      addPlayer();
   }
@@ -225,12 +227,12 @@ void addPlayer() {
  dispenseCard();
  cardSpitter->step(35, BACKWARD);
  cardSpitter->release();
- rotate(25);
- faceStepsTaken += 25;
+ rotate(cardDealingSteps);
+ faceStepsTaken += cardDealingSteps;
 }
 
 bool getRotLimit() {
-  return digitalRead(rotSwitch);
+  return !digitalRead(rotSwitch);
 }
 
 int getHit() {
@@ -259,14 +261,15 @@ int flushSerial() {
 }
 
 void zero() {
- bool limit = false;
-
- while(!limit) {
-  rotate(1);
-  if(getRotLimit()) {
-    limit = true;
-  }
- }
+  rotational->step(fullRotation, BACKWARD);
+  rotational->release();
+// bool limit = getRotLimit();
+// Serial.println("Zeroing");
+// while(!limit) {
+//  rotational->step(1, BACKWARD);
+//  rotational->release();
+//  limit = getRotLimit();
+// }
 }
  void allSystemsTest() {
 
@@ -280,7 +283,4 @@ void zero() {
     
    }
    dispenseCard();
-   
-  
  }
-
