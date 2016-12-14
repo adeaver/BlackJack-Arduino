@@ -19,7 +19,7 @@ int players[50];
 uint8_t reflectancePin = A3;     // reflectance sensor is connected to pin 3
 int reflectanceVal = 1001;           // variable to store the value read
 
-const uint8_t hitButtonPin = A4;      //input pin for "Hit" button
+const int hitButtonPin = A4;      //input pin for "Hit" button
 const uint8_t passButtonPin = A2;     //input pin for "Pass" button
 const uint8_t rotSwitch = 5;
 const uint8_t startButton = 6;
@@ -32,12 +32,14 @@ int startPressed = LOW;
 const int fullRotation = 600;
 const int cardDealingSteps = 25;
 
-boolean started = false;
-boolean faceScanning = true;
+boolean started = true;
+boolean faceScanning = false;
 boolean playingGame = true;
 
 unsigned long lastDebounce = millis();
+unsigned long cardDealDebounce;
 unsigned long debounceDelay = 2000;
+unsigned long cardDealDelay = 500;
 
 void setup() {
   Serial.begin(9600);
@@ -53,7 +55,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("In Loop");
+  //Serial.println("In Loop");
   if(playingGame) {
     if(!faceScanning) {
       if(!started) {
@@ -87,15 +89,20 @@ void loop() {
 
 void dispenseCard() {
   Serial.println("Dispensing");
-  cardsDealt++;
+  //cardsDealt++;
   reflectanceVal = analogRead(reflectancePin);
-  Serial.println(reflectanceVal);
-  while (reflectanceVal>1000) {
+  //cardDealDebounce = millis();
+  //delay(20);
+  
+  //Serial.println(reflectanceVal);
+  while (reflectanceVal > 1000) {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
-    //delay(5);
-    Serial.println(reflectanceVal);
+    delay(20);
+    //Serial.println(reflectanceVal);
+    //Serial.println("In Loop");
     cardSpitter->step(1, FORWARD);
   }
+  Serial.println("Done");
   cardSpitter->release();
   reflectanceVal = 1001;
   delay(200);
@@ -122,8 +129,8 @@ void goToNextPlayer() {
   
  // Serial.println(moveSteps);
   
-  rotate(moveSteps);
-  //rotate(240);
+  //rotate(moveSteps);
+  rotate(240);
   
   currentPlayer = (currentPlayer+1) % playerCount;
   
@@ -134,8 +141,8 @@ void goToNextPlayer() {
 }
 
 void getUserInput() {
-  hitPressed = analogRead(hitButtonPin);
-  //passPressed = getPass();
+  hitPressed = getHit();
+  passPressed = getPass();
   passPressed = 1000;
   //startPressed = getStartStop();
   
@@ -144,14 +151,19 @@ void getUserInput() {
 
   boolean wait = true;
   boolean hit = false;
+  boolean pass = false;
 
-  while(hitPressed > 1000) {
-    hitPressed = analogRead(hitButtonPin);
-    //passPressed = getPass();
+  while(hitPressed > 1000 && passPressed > 1000) {
+    hitPressed = getHit();
+    passPressed = getPass();
     //startPressed = getStartStop();
     
     if(hitPressed <= 1000) {
       hit = true;  
+    }
+    
+    if(passPressed <= 1000) {
+      pass = true;  
     }
     
     Serial.println(hitPressed);
@@ -162,16 +174,15 @@ void getUserInput() {
   
   if(hit) {
     dispenseCard();
-    goToNextPlayer();
-  } else if(passPressed < 900) {
+  }
+  
+  if(pass) {
     goToNextPlayer();
   }
   
 //  if(startPressed) {
 //    endGame();
 //  }
-  
-  //dispenseCard();
   
   hitPressed = 1100;
   passPressed = 1100;
