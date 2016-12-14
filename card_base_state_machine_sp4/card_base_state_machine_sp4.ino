@@ -33,7 +33,7 @@ const int fullRotation = 600;
 const int cardDealingSteps = 25;
 
 boolean started = true;
-boolean faceScanning = false;
+boolean faceScanning = true;
 boolean playingGame = true;
 
 unsigned long lastDebounce = millis();
@@ -87,12 +87,6 @@ void loop() {
 
 void dispenseCard() {
   Serial.println("Dispensing");
-<<<<<<< Updated upstream
-  cardsDealt++;
-  reflectanceVal = analogRead(reflectancePin);
-  Serial.println(reflectanceVal);
-  while (reflectanceVal>1000) {
-=======
   //cardsDealt++;
   delay(20);
   reflectanceVal = analogRead(reflectancePin);
@@ -101,7 +95,6 @@ void dispenseCard() {
   
   //Serial.println(reflectanceVal);
   while (reflectanceVal > 1000) {
->>>>>>> Stashed changes
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
     delay(20);
     //Serial.println(reflectanceVal);
@@ -259,6 +252,7 @@ int flushSerial() {
   int rVal = 0;
   while(Serial.available()) {
     rVal = Serial.read();
+    //Serial.println("Reading serial");
     if(val == 0 && rVal > 0) {
       val = rVal; 
     }
