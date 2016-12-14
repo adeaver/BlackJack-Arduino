@@ -87,10 +87,21 @@ void loop() {
 
 void dispenseCard() {
   Serial.println("Dispensing");
+<<<<<<< Updated upstream
   cardsDealt++;
   reflectanceVal = analogRead(reflectancePin);
   Serial.println(reflectanceVal);
   while (reflectanceVal>1000) {
+=======
+  //cardsDealt++;
+  delay(20);
+  reflectanceVal = analogRead(reflectancePin);
+  //cardDealDebounce = millis();
+  delay(20);
+  
+  //Serial.println(reflectanceVal);
+  while (reflectanceVal > 1000) {
+>>>>>>> Stashed changes
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
     delay(20);
     //Serial.println(reflectanceVal);
