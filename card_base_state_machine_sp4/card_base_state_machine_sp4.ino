@@ -32,8 +32,8 @@ int startPressed = LOW;
 const int fullRotation = 600;
 const int cardDealingSteps = 25;
 
-boolean started = false;
-boolean faceScanning = true;
+boolean started = true;
+boolean faceScanning = false;
 boolean playingGame = true;
 
 unsigned long lastDebounce = millis();
@@ -53,7 +53,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println("In Loop");
+  //Serial.println("In Loop");
   if(playingGame) {
     if(!faceScanning) {
       if(!started) {
@@ -92,8 +92,8 @@ void dispenseCard() {
   Serial.println(reflectanceVal);
   while (reflectanceVal>1000) {
     reflectanceVal = analogRead(reflectancePin);    // read the input pin
-    //delay(5);
-    Serial.println(reflectanceVal);
+    delay(20);
+    //Serial.println(reflectanceVal);
     cardSpitter->step(1, FORWARD);
   }
   cardSpitter->release();
@@ -122,8 +122,8 @@ void goToNextPlayer() {
   
  // Serial.println(moveSteps);
   
-  rotate(moveSteps);
-  //rotate(240);
+  //rotate(moveSteps);
+  rotate(240);
   
   currentPlayer = (currentPlayer+1) % playerCount;
   
