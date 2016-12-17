@@ -108,13 +108,16 @@ void dispenseCard() {
 }
 
 void rotate(int steps) {
+  cardSpitter->step(75, BACKWARD);
   rotational->step(steps, FORWARD, DOUBLE);
+  cardSpitter->step(40, FORWARD);
+  cardSpitter->release();
   rotational->release();
 }
 
 void goToNextPlayer() {
   Serial.println("Rotating");
-  cardSpitter->step(50, BACKWARD);
+  
 
   int moveSteps = players[currentPlayer] - atSteps;
   
@@ -132,11 +135,6 @@ void goToNextPlayer() {
   rotate(150);
   
   currentPlayer = (currentPlayer+1) % playerCount;
-  
-  cardSpitter->step(35, FORWARD);
-
-//  currentPlayer++;
-  cardSpitter->release();
 }
 
 void getUserInput() {
